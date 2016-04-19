@@ -1,0 +1,25 @@
+div #terminal {
+    background: black;
+    font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+    color: white;
+    overflow-y: scroll;
+	word-wrap: break-word;
+    white-space: pre-wrap;
+    height: 400px;
+    margin: 5px;
+    padding: 5px;
+}
+
+/**	white-space: pre-wrap; */
+
+div .puller {
+    height: 10px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: row-resize;
+    background: #f5f6f6; /* Old browsers */
+    background: -moz-linear-gradient(top, #f5f6f6 0%, #dbdce2 4%, #565055 31%, #dddfe3 97%, #f5f6f6 100%); /* FF3.6-15 */
+    background: -webkit-linear-gradient(top, #f5f6f6 0%, #dbdce2 4%, #565055 31%, #dddfe3 97%, #f5f6f6 100%); /* Chrome10-25,Safari5.1-6 */
+    background: linear-gradient(to bottom, #f5f6f6 0%, #dbdce2 4%, #565055 31%, #dddfe3 97%, #f5f6f6 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f5f6f6', endColorstr='#f5f6f6', GradientType=0); /* IE6-9 */
+}

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compiler service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="/static/lib/css/bootstrap.min.css">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="/static/lib/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="/static/css/common.css">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="/static/lib/js/jquery-2.2.2.min.js"></script>
+    <script src="/static/lib/js/bootstrap.min.js"></script>
+    <script src="/static/lib/js/dropzone.js"></script>
+    <script src="/static/lib/js/eventsource.min.js"></script>
+</head>
+<body>
+<div id="alerts" class="container col-md-6" style="position:fixed; right: 0px;">
+</div><!--/col-md-12--->
+<script>
+    var APIKEY = "{{apiKey}}";
+</script>
+<header>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                        data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Compiler service</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a>Logged as {{username}}</a></li>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </nav>
+</header>
+<div class="container">
+
+    <!-- drag and drop -->
+    <!-- HTML heavily inspired by http://blueimp.github.io/jQuery-File-Upload/ -->
+    <div id="actions" class="row">
+        <div class="container">
+            <div class="alert alert-info">
+                Please drag here a .zip file
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <!-- The fileinput-button span is used to style the file input field as button -->
+        <span class="btn btn-success fileinput-button">
+            <i class="glyphicon glyphicon-plus"></i>
+            <span>Add files...</span>
+        </span>
+            <button type="submit" class="btn btn-primary start">
+                <i class="glyphicon glyphicon-upload"></i>
+                <span>Start upload</span>
+            </button>
+            <button type="reset" class="btn btn-warning cancel">
+                <i class="glyphicon glyphicon-ban-circle"></i>
+                <span>Cancel upload</span>
+            </button>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- The global file processing state -->
+        <span class="fileupload-process">
+          <div id="total-progress" class="progress progress-striped active" role="progressbar" aria-valuemin="0"
+               aria-valuemax="100" aria-valuenow="0">
+              <div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress></div>
+          </div>
+        </span>
+        </div>
+
+    </div>
+
+    <div class="table table-striped files" id="previews">
+
+        <div id="template" class="file-row">
+            <!-- This is used as the file preview template -->
+            <div>
+                <span class="preview"><img data-dz-thumbnail/></span>
+            </div>
+            <div>
+                <p class="name" data-dz-name></p>
+                <strong class="error text-danger" data-dz-errormessage></strong>
+            </div>
+            <div>
+                <p class="size" data-dz-size></p>
+                <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                     aria-valuenow="0">
+                    <div class="progress-bar progress-bar-success" style="width:0%;" data-dz-uploadprogress></div>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-primary start">
+                    <i class="glyphicon glyphicon-upload"></i>
+                    <span>Start</span>
+                </button>
+                <button data-dz-remove class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+                <button data-dz-remove class="btn btn-danger delete">
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Get the template HTML and remove it from the doument
+        var previewNode = document.querySelector("#template");
+        previewNode.id = "";
+        var previewTemplate = previewNode.parentNode.innerHTML;
+        previewNode.parentNode.removeChild(previewNode);
+
+        var myDropzone = new Dropzone(document.body, { // Make the whole body a dropzone
+            url: "/rest/dropfile?apikey="+APIKEY,
+//            headers: {"X-ApiKey": APIKEY},
+			maxFilesize: 4096,
+            thumbnailWidth: 80,
+            thumbnailHeight: 80,
+            parallelUploads: 1,
+            previewTemplate: previewTemplate,
+            autoQueue: false, // Make sure the files aren't queued until manually added
+            previewsContainer: "#previews", // Define the container to display the previews
+            clickable: ".fileinput-button" // Define the element that should be used as click trigger to select files.
+        });
+
+        myDropzone.on("addedfile", function (file) {
+            if (this.files[1] != null) {
+                this.removeFile(this.files[0]);
+            }
+
+            // Hookup the start button
+            file.previewElement.querySelector(".start").onclick = function () {
+                consoleWriteLn("Sending file...");
+                myDropzone.enqueueFile(file);
+            };
+        });
+
+        // Update the total progress bar
+        myDropzone.on("totaluploadprogress", function (progress) {
+            document.querySelector("#total-progress .progress-bar").style.width = progress + "%";
+        });
+
+        myDropzone.on("sending", function (file) {
+            // Show the total progress bar when upload starts
+            document.querySelector("#total-progress").style.opacity = "1";
+            // And disable the start button
+            file.previewElement.querySelector(".start").setAttribute("disabled", "disabled");
+        });
+
+        myDropzone.on("success", function(file, responseText) {
+            consoleWrite(responseText);
+            document.querySelector("#total-progress").style.opacity = "0";
+        });
+
+        // Hide the total progress bar when nothing's uploading anymore
+        myDropzone.on("queuecomplete", function (progress) {
+            document.querySelector("#total-progress").style.opacity = "0";
+			this.removeAllFiles(false);
+        });
+
+        // Setup the buttons for all transfers
+        // The "add files" button doesn't need to be setup because the config
+        // `clickable` has already been specified.
+        document.querySelector("#actions .start").onclick = function () {
+            consoleWriteLn("Sending file...");
+            myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED));
+        };
+        document.querySelector("#actions .cancel").onclick = function () {
+            myDropzone.removeAllFiles(true);
+        };
+    </script>
+
+    <!-- end drag and drop-->
+
+    <!-- real time console -->
+    <!-- Real-time console -->
+    <div id="terminal" style="height: 480px" class="row">Logging console
+===============
+Please upload a .zip file using the <span style="color: green">Add files...</span> button, or just drag it into
+the <span style="color: deepskyblue">blue box</span>.
+
+The .zip file must contain a valid Maven pom.xml file in its root folder.
+
+When you are ready, push the <span style="color: blue">Start upload</span> button.
+
+The output of the build process will appear here.
+</div>
+    <div class="row puller" id="sizer"><span class="glyphicon glyphicon-resize-vertical"></span></div>
+</div>
+<script>
+    var sizer = document.getElementById("sizer");
+    var terminal = document.getElementById("terminal");
+    var isMouseDown = false;
+    var initialY;
+    var initialHeight;
+    sizer.addEventListener("mousedown", function (event) {
+        isMouseDown = true;
+        initialY = event.clientY;
+        initialHeight = parseInt(terminal.style.height.substring(0, terminal.style.height.indexOf("px")));
+    });
+    document.addEventListener("mouseup", function () {
+        isMouseDown = false;
+    })
+    document.addEventListener("mousemove", function (event) {
+        if (isMouseDown) {
+            terminal.style.height = (initialHeight + event.clientY - initialY) + "px";
+        }
+    })
+
+    var term = $("#terminal");
+    function consoleCls() {
+        term.empty();
+    }
+    function consoleWrite(text) {
+        term.append(text);
+        term.animate({ scrollTop: $(document).height() },0);
+    }
+    function consoleWriteLn(text) {
+        consoleWrite(text+"\n");
+    }
+
+	var source;
+	if (!!window.EventSource) {
+		// SSE doesn't allow sending api key as header
+		source = new EventSource('/rest/console?apikey=' + APIKEY);
+	} else {
+		consoleWriteLn("YOUR BROWSER DOES NOT SUPPORT SSE. You won't see any real time info in this console");
+	}
+	source.addEventListener('message', function (e) {
+		consoleWriteLn("" + e.data);
+	}, false);
+	source.addEventListener('open', function (e) {
+		consoleWriteLn("Connecting to the console server...");
+		// Connection was opened.
+	}, false);
+	source.addEventListener('error', function (e) {
+		if (e.readyState == EventSource.CLOSED) {
+			consoleWriteLn("**** ERROR: " + e);
+		}
+	}, false);
+</script>
+
+
+</div>
+
+<!-- end of real time console-->
+</body>
+</html>
