@@ -23,7 +23,8 @@ The backend is coded in [Kotlin](https://kotlinlang.org/), my brand-new favourit
 		
 3. Run the maven all-in-one jar package specifying the path to the configuration file:
 
-		java -Dconfig=path/to/config.properties -jar target/compiler-service.jar
+		cd target/
+		java -Dconfig=path/to/config.properties -jar codebuilder.jar
 		
 4. Go to `http://localhost:8080/gui`, using `user` as both username and password in the login screen. You will see
 the main screen of the application:
