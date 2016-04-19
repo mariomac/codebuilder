@@ -45,8 +45,11 @@ As this is only a demo project, many improvements would be required for a produc
 
 - Provide a persistent authentication system (now for testing, user/password is hardcoded in memory)
 - Auto-download multiple-produced artifacts (JARs, WARs...)
-- 
 
+Other tasks I will do in the near future:
+
+- Document code
+- Document design and architecture
 
 
 
