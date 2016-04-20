@@ -4,13 +4,14 @@ import info.macias.codebuilder.AppController
 import info.macias.codebuilder.Cfg
 import info.macias.codebuilder.auth.DbAuthProviderClient
 import info.macias.codebuilder.auth.msg.CredentialsCall
-import info.macias.codebuilder.console.ConsoleManager
+import info.macias.codebuilder.console.EventsManager
 import info.macias.codebuilder.zip.ZipChunksCodec
 import info.macias.kutils.intToByteArray
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.eventbus.DeliveryOptions
 import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import org.slf4j.LoggerFactory
@@ -20,7 +21,7 @@ import java.util.*
  * Created by mmacias on 30/3/16.
  */
 internal class RestEndpoint {
-    val consoleManager = ConsoleManager()
+    val clientEventsManager = EventsManager()
 
     val logger = LoggerFactory.getLogger(RestEndpoint::class.java)
     fun register(router: Router, vertx: Vertx) {
@@ -43,21 +44,21 @@ internal class RestEndpoint {
                     }
         }
 
-        router.get("/rest/console").handler { ctx ->
-            consoleManager.listen(ctx.user().principal().getString("name"),ctx.request())
+        router.get("/rest/events").handler { ctx ->
+            clientEventsManager.listen(ctx.session().id(),ctx.request())
         }
 
         router.get("/rest/hello").handler { ctx ->
-            consoleManager.writeln(ctx.user().principal().getString("name"), ctx.user().principal().getString("name") + " said hello")
+            clientEventsManager.writeln(ctx.session().id(), ctx.user().principal().getString("name") + " said hello")
             ctx.response().end()
         }
 
         router.post("/rest/dropfile").handler({ ctx ->
-            var userName = ctx.user().principal().getString("name")
+            val sessionId = ctx.session().id()
             var file : FileUpload? = null
             for (f in ctx.fileUploads()) {
                 file = f
-                consoleManager.writeln(userName, "Filename: ${f.fileName()}\n");
+                clientEventsManager.writeln(sessionId, "Filename: ${f.fileName()}\n");
                 var size = f.size().toDouble()
                 val (sizeStr,unit) = if(size / 1000000000 > 0.1) {
                     Pair(String.format("%.2f",size/1000000000), "GB")
@@ -68,34 +69,34 @@ internal class RestEndpoint {
                 } else{
                     Pair(size.toString(),"B")
                 }
-                consoleManager.writeln(userName, "Size: ${sizeStr} $unit\n");
+                clientEventsManager.writeln(sessionId, "Size: ${sizeStr} $unit\n");
                 break; // we consider only one file
             }
             try {
                 if(file == null) throw NullPointerException("There is no file");
 
-                consoleManager.writeln(userName, "Unzipping file... This task can take long depending on the size of the file")
+                clientEventsManager.writeln(sessionId, "Unzipping file... This task can take long depending on the size of the file")
                 vertx.eventBus().send<JsonArray>(
                         AppController.Verticles.ZIP.address,
                         file.uploadedFileName(),
                         {
                             if(it.succeeded()) {
-                                consoleManager.writeln(userName, "Sending file to Zip worker: Succeeded ")
+                                clientEventsManager.writeln(sessionId, "Sending file to Zip worker: Succeeded ")
                                 val files = it.result().body()
-                                consoleManager.writeln(userName, "${files.size()} entries have been extracted to:\n\t${files.getString(0)}")
-                                consoleManager.writeln(userName, "Building...")
+                                clientEventsManager.writeln(sessionId, "${files.size()} entries have been extracted to:\n\t${files.getString(0)}")
+                                clientEventsManager.writeln(sessionId, "Building...")
                                 vertx.eventBus().send<String>(AppController.Verticles.BUILDER.address,
                                         files.getString(0),
                                         { replyHandler->
-                                            consoleManager.writeln(userName,replyHandler.result().body())
+                                            clientEventsManager.writeln(sessionId,replyHandler.result().body())
                                             if(replyHandler.failed()) {
-                                                consoleManager.writeln(userName,"ERROR: The build process failed")
+                                                clientEventsManager.writeln(sessionId,"ERROR: The build process failed")
                                             }
                                         })
                             }
                             if(it.failed()) {
-                                consoleManager.writeln(userName, "Sending file to Zip worker: Failed")
-                                consoleManager.writeln(userName, "Sending file to Zip worker: cause:  " + it.cause())
+                                clientEventsManager.writeln(sessionId, "Sending file to Zip worker: Failed")
+                                clientEventsManager.writeln(sessionId, "Sending file to Zip worker: cause:  " + it.cause())
                             }
 
                         });
@@ -103,12 +104,29 @@ internal class RestEndpoint {
             } catch(t: Throwable) {
                 logger.debug(t.message,t)
                 ctx.response().statusCode = 500;
-                consoleManager.writeln(userName, "ERROR: ${t.message}");
+                clientEventsManager.writeln(sessionId, "ERROR: ${t.message}");
             }
             // use the same redirection technique as gui to allow download file
             // o mirar metodo "sendfile"
             ctx.response().end();
         });
+
+        router.get("/rest/file/:id").handler { ctx ->
+            val id : String = "mirar como se hacen los path params aqui"
+            vertx.eventBus().send<String>(AppController.Verticles.FILESERVER.address,
+                    JsonObject().put("cmd","name").put("id",id),
+                    { result ->
+                        ctx.response().putHeader("Content-type","octet-stream")
+                        ctx.response().putHeader("Content-Disposition","attachment; fileName=${result.result().body()}")
+                        vertx.eventBus().send<ByteArray>(AppController.Verticles.FILESERVER.address,
+                                JsonObject().put("cmd","get").put("id","id"),
+                                { fileResult ->
+                                    ctx.response().write(Buffer.buffer(fileResult.result().body()))
+                                    ctx.response().end()
+                                })
+                    })
+
+        }
     }
 
 }

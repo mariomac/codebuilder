@@ -5,7 +5,8 @@ import info.macias.codebuilder.auth.CredentialsVerticle
 import info.macias.codebuilder.auth.impl.MemoryUserDao
 import info.macias.codebuilder.auth.impl.Sha256HexDigest
 import info.macias.codebuilder.builder.BuilderVerticle
-import info.macias.codebuilder.console.ConsoleManager
+import info.macias.codebuilder.console.EventsManager
+import info.macias.codebuilder.file.FileServerVerticle
 import info.macias.codebuilder.http.HttpEndpointVerticle
 import info.macias.codebuilder.zip.ZipWorkerVerticle
 import io.vertx.core.AbstractVerticle
@@ -40,6 +41,7 @@ class AppController() : AbstractVerticle() {
         CREDENTIALS("Credentials", CredentialsVerticle("Credentials", CredentialsManager(MemoryUserDao(), Sha256HexDigest()))),
         HTTP("HTTP", HttpEndpointVerticle()), // for heavy drop files
         ZIP("ZipWorker", ZipWorkerVerticle("ZipWorker", Cfg.tmpFolder), worker = true),
-        BUILDER("Builder", BuilderVerticle("Builder",Cfg.m2Home), worker=true )
+        BUILDER("Builder", BuilderVerticle("Builder",Cfg.m2Home), worker=true ),
+        FILESERVER("FileServer",FileServerVerticle("FileServer"),worker = true)
     }
 }
