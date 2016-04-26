@@ -80,6 +80,7 @@ internal class GuiEndpoint() {
         router.route("/gui/index").handler({ ctx ->
             ctx.put("username", ctx.user().principal().getString("name"))
             ctx.put("apiKey", ctx.user().principal().getString("apiKey"))
+            ctx.put("sessionId", ctx.session().id())
             renderTemplate(ctx, "templates/index.hbs")
         })
     }

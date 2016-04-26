@@ -20,6 +20,7 @@
 </div><!--/col-md-12--->
 <script>
     var APIKEY = "{{apiKey}}";
+	var SESSION_ID = "{{sessionId}}";
 </script>
 <header>
     <nav class="navbar navbar-inverse">
@@ -127,7 +128,7 @@
         previewNode.parentNode.removeChild(previewNode);
 
         var myDropzone = new Dropzone(document.body, { // Make the whole body a dropzone
-            url: "/rest/dropfile?apikey="+APIKEY,
+            url: "/rest/dropfile?apikey="+APIKEY+"&sessionId="+SESSION_ID,
 //            headers: {"X-ApiKey": APIKEY},
 			maxFilesize: 4096,
             thumbnailWidth: 80,
@@ -238,7 +239,7 @@ The output of the build process will appear here.
 	var source;
 	if (!!window.EventSource) {
 		// SSE doesn't allow sending api key as header
-		source = new EventSource('/rest/events?apikey=' + APIKEY);
+		source = new EventSource('/rest/events?apikey=' + APIKEY + '&sessionId=' + SESSION_ID);
 	} else {
 		consoleWriteLn("YOUR BROWSER DOES NOT SUPPORT SSE. You won't see any real time info in this console");
 	}

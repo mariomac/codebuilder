@@ -45,16 +45,11 @@ internal class RestEndpoint {
         }
 
         router.get("/rest/events").handler { ctx ->
-            clientEventsManager.listen(ctx.session().id(),ctx.request())
-        }
-
-        router.get("/rest/hello").handler { ctx ->
-            clientEventsManager.writeln(ctx.session().id(), ctx.user().principal().getString("name") + " said hello")
-            ctx.response().end()
+            clientEventsManager.listen(ctx.request().getParam("sessionId"),ctx.request())
         }
 
         router.post("/rest/dropfile").handler({ ctx ->
-            val sessionId = ctx.session().id()
+            val sessionId = ctx.request().getParam("sessionId")
             var file : FileUpload? = null
             for (f in ctx.fileUploads()) {
                 file = f
@@ -85,10 +80,10 @@ internal class RestEndpoint {
                                 val files = it.result().body()
                                 clientEventsManager.writeln(sessionId, "${files.size()} entries have been extracted to:\n\t${files.getString(0)}")
                                 clientEventsManager.writeln(sessionId, "Building...")
-                                vertx.eventBus().send<String>(AppController.Verticles.BUILDER.address,
+                                vertx.eventBus().send<JsonObject>(AppController.Verticles.BUILDER.address,
                                         files.getString(0),
                                         { replyHandler->
-                                            clientEventsManager.writeln(sessionId,replyHandler.result().body())
+                                            clientEventsManager.writeln(sessionId,replyHandler.result().body().encodePrettily())
                                             if(replyHandler.failed()) {
                                                 clientEventsManager.writeln(sessionId,"ERROR: The build process failed")
                                             }
@@ -112,7 +107,7 @@ internal class RestEndpoint {
         });
 
         router.get("/rest/file/:id").handler { ctx ->
-            val id : String = "mirar como se hacen los path params aqui"
+            val id = ctx.request().getParam("id")
             vertx.eventBus().send<String>(AppController.Verticles.FILESERVER.address,
                     JsonObject().put("cmd","name").put("id",id),
                     { result ->

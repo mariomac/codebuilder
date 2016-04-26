@@ -1,11 +1,15 @@
 package info.macias.codebuilder.builder
 
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
 import org.apache.maven.cli.MavenCli
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.io.PrintStream
+import java.util.*
 
 /**
  * @author Mario Macias (http://github.com/mariomac)
@@ -41,8 +45,13 @@ class BuilderVerticle(val address : String, val m2Home:String) : AbstractVerticl
 
             sb.append('\n').append("Maven process returned $result")
             if(result == 0) {
+                val targetDir = File("$projectRoot/target")
+                val files = JsonArray()
+                targetDir.list { file, name -> name.endsWith(".war") || name.endsWith(".jar") || name.endsWith(".ear") }
+                    .forEach { files.add("$projectRoot/target/$it") }
+
                 // todo: return output stream and compiled file location
-                msgHandler.reply(sb.toString())
+                msgHandler.reply(JsonObject().put("files", files).put("out", sb.toString()))
             } else {
                 msgHandler.fail(result!!,sb.toString())
             }
