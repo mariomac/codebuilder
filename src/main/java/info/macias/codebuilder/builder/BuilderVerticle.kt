@@ -48,9 +48,7 @@ class BuilderVerticle(val address : String, val m2Home:String) : AbstractVerticl
                 val targetDir = File("$projectRoot/target")
                 val files = JsonArray()
                 targetDir.list { file, name -> name.endsWith(".war") || name.endsWith(".jar") || name.endsWith(".ear") }
-                    .forEach { files.add("$projectRoot/target/$it") }
-
-                // todo: return output stream and compiled file location
+                    .forEach { files.add("$projectRoot/target/$it"); }
                 msgHandler.reply(JsonObject().put("files", files).put("out", sb.toString()))
             } else {
                 msgHandler.fail(result!!,sb.toString())

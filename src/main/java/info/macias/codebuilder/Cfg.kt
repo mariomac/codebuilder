@@ -13,6 +13,7 @@ object Cfg {
     val tmpFolder : String
     val uploadsFolder: String
     val m2Home : String
+    val buildTimeout : Long
     init {
         val properties = Properties();
         properties.load(Cfg.javaClass.getResourceAsStream("/config.properties"))
@@ -24,5 +25,6 @@ object Cfg {
         uploadsFolder = properties.getProperty("uploads.folder", "${tmpFolder}file-uploads")
         log.info("Uploads folder: $uploadsFolder")
         m2Home = properties.getProperty("m2.home")
+        buildTimeout = properties.getProperty("build.timeout","60000").toLong()
     }
 }

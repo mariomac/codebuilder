@@ -76,16 +76,32 @@ internal class RestEndpoint {
                         file.uploadedFileName(),
                         {
                             if(it.succeeded()) {
-                                clientEventsManager.writeln(sessionId, "Sending file to Zip worker: Succeeded ")
                                 val files = it.result().body()
-                                clientEventsManager.writeln(sessionId, "${files.size()} entries have been extracted to:\n\t${files.getString(0)}")
+                                clientEventsManager.writeln(sessionId, " ${files.size()} entries")
+                                logger.debug("${files.size()} entries have been extracted to:\n\t${files.getString(0)}")
                                 clientEventsManager.writeln(sessionId, "Building...")
                                 vertx.eventBus().send<JsonObject>(AppController.Verticles.BUILDER.address,
                                         files.getString(0),
+                                        DeliveryOptions().setSendTimeout(Cfg.buildTimeout),
                                         { replyHandler->
-                                            clientEventsManager.writeln(sessionId,replyHandler.result().body().encodePrettily())
                                             if(replyHandler.failed()) {
-                                                clientEventsManager.writeln(sessionId,"ERROR: The build process failed")
+                                                clientEventsManager.writeln(sessionId,"Build failed: ${replyHandler.cause()}")
+                                            } else {
+                                                val result = replyHandler.result().body()
+                                                clientEventsManager.writeln(sessionId,result.getString("out"))
+                                                if(replyHandler.failed()) {
+                                                    clientEventsManager.writeln(sessionId,"ERROR: The build process failed")
+                                                } else {
+                                                    // notify file server and then return back file IDs to the client
+                                                    result.getJsonArray("files").forEach { filePath ->
+                                                        vertx.eventBus().send<String>(AppController.Verticles.FILESERVER.address,
+                                                                JsonObject().put("cmd","put").put("path",filePath.toString()),
+                                                                { fileId ->
+                                                                    clientEventsManager.onFileReady(sessionId,fileId.result().body())
+                                                                }
+                                                        )
+                                                    }
+                                                }
                                             }
                                         })
                             }
@@ -111,12 +127,14 @@ internal class RestEndpoint {
             vertx.eventBus().send<String>(AppController.Verticles.FILESERVER.address,
                     JsonObject().put("cmd","name").put("id",id),
                     { result ->
-                        ctx.response().putHeader("Content-type","octet-stream")
-                        ctx.response().putHeader("Content-Disposition","attachment; fileName=${result.result().body()}")
                         vertx.eventBus().send<ByteArray>(AppController.Verticles.FILESERVER.address,
-                                JsonObject().put("cmd","get").put("id","id"),
+                                JsonObject().put("cmd","get").put("id",id),
                                 { fileResult ->
-                                    ctx.response().write(Buffer.buffer(fileResult.result().body()))
+                                    val fileBytes = fileResult.result().body()
+                                    ctx.response().putHeader("Content-type","octet-stream")
+                                    ctx.response().putHeader("Content-Disposition","attachment; fileName=${result.result().body()}")
+                                    ctx.response().putHeader("Content-Length", fileBytes.size.toString())
+                                    ctx.response().write(Buffer.buffer(fileBytes))
                                     ctx.response().end()
                                 })
                     })

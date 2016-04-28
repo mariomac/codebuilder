@@ -11,6 +11,10 @@ It uses the next technologies:
   
 The backend is coded in [Kotlin](https://kotlinlang.org/), my brand-new favourite programming language :bowtie:
 
+## Quick demo
+
+![Quick demo](codebuilder.gif)
+
 ## How to compile and use
 
 1. Build the project with maven:
@@ -37,6 +41,9 @@ the main screen of the application:
 process in the console:
 
 ![Real time console](sshot1.png)
+
+7. The result files will be automatically downloaded. You can also download them by using the "Download link" anchors
+   in the console.
 
 
 ## TO DO

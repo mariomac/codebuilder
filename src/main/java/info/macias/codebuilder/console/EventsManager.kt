@@ -32,9 +32,9 @@ class EventsManager {
         }
     }
 
-    fun onFileReady(sessionId:String, path:String) {
+    fun onFileReady(sessionId:String, fileId:String) {
         synchronized(users) {
-            users.get(sessionId)?.send(evFileReady,path)
+            users.get(sessionId)?.send(evFileReady,fileId)
         }
     }
 

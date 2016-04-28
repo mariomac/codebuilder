@@ -235,6 +235,9 @@ The output of the build process will appear here.
     function consoleWriteLn(text) {
         consoleWrite(text+"\n");
     }
+	function download(url) {
+		document.getElementById('download_helper').src = url;
+	}
 
 	var source;
 	if (!!window.EventSource) {
@@ -246,6 +249,11 @@ The output of the build process will appear here.
 	source.addEventListener('message', function (e) {
 		consoleWriteLn("" + e.data);
 	}, false);
+	source.addEventListener('fileReady', function(e) {
+		var downloadLink = '/rest/file/'+e.data + '?apikey=' + APIKEY + '&sessionId=' + SESSION_ID;
+		consoleWriteLn("Downloading built artifact... <a href='"+downloadLink+"' download>[ Download link ]</a>");
+		download(downloadLink);
+	}, false);
 	source.addEventListener('open', function (e) {
 		consoleWriteLn("Connecting to the console server...");
 		// Connection was opened.
@@ -256,10 +264,7 @@ The output of the build process will appear here.
 		}
 	}, false);
 </script>
-
-
 </div>
-
-<!-- end of real time console-->
+<iframe id="download_helper" style="display:none;"></iframe>
 </body>
 </html>

@@ -17,16 +17,20 @@ class FileServerVerticle(val address: String) : AbstractVerticle() {
             val body = message.body()
             val cmd = body.getString("cmd")
             if(cmd == "put") {
-                fileMap.put(body.getString("id"), body.getString("path"))
+                val id = UUID.randomUUID().toString()
+                fileMap.put(id, body.getString("path"))
+                message.reply(id)
             } else if(cmd == "get") {
                 val file = File(fileMap.get(body.getString("id")))
                 val fis = FileInputStream(file)
                 val bytes = ByteArray(file.length().toInt())
-                var read = fis.read(bytes)
+                fis.read(bytes)
                 message.reply(bytes)
             } else if(cmd == "name") {
                 val path = fileMap.get(body.getString("id"))
-                message.reply(path?.substring(path.lastIndexOf(File.pathSeparatorChar)+1))
+                val name = path?.substring(path.lastIndexOf(File.separatorChar)+1)
+                println("Returning name : $name")
+                message.reply(name)
             }
         })
     }
