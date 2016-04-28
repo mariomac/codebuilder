@@ -51,7 +51,7 @@ process in the console:
 As this is only a demo project, many improvements would be required for a production environment:
 
 - Provide a persistent authentication system (now for testing, user/password is hardcoded in memory)
-- Auto-download multiple-produced artifacts (JARs, WARs...)
+- Pack multiple-produced artifacts (JARs, WARs...) into a single zip file to avoid security warnings in some browsers.
 
 Other tasks I will do in the near future:
 
