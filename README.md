@@ -33,14 +33,14 @@ The backend is coded in [Kotlin](https://kotlinlang.org/), my brand-new favourit
 4. Go to `http://localhost:8080/gui`, using `user` as both username and password in the login screen. You will see
 the main screen of the application:
 
-![Main screen](sshot0.png)
+ ![Main screen](sshot0.png)
 
 5. Drag a .zip file to the blue box, which contains the Maven pom.xml in its root folder.
 
 6. Click on the "start upload" button and the upload and building process. You will see the real-time output of the
 process in the console:
 
-![Real time console](sshot1.png)
+ ![Real time console](sshot1.png)
 
 7. The result files will be automatically downloaded. You can also download them by using the "Download link" anchors
    in the console.
